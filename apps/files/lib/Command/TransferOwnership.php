@@ -24,8 +24,13 @@
 
 namespace OCA\Files\Command;
 
+use OC\Encryption\CustomEncryptionWrapper;
+use OC\Encryption\Manager;
+use OC\Files\CustomView;
 use OC\Files\Filesystem;
+use OC\Files\Storage\Wrapper\Wrapper;
 use OC\Files\View;
+use OC\Memcache\ArrayCache;
 use OCP\Files\FileInfo;
 use OCP\Files\Mount\IMountManager;
 use OCP\IUserManager;
@@ -49,6 +54,8 @@ class TransferOwnership extends Command {
 	/** @var IMountManager */
 	private $mountManager;
 
+	private $encryptionManager;
+
 	/** @var FileInfo[] */
 	private $allFiles = [];
 
@@ -70,10 +77,11 @@ class TransferOwnership extends Command {
 	/** @var string */
 	private $finalTarget;
 
-	public function __construct(IUserManager $userManager, IManager $shareManager, IMountManager $mountManager) {
+	public function __construct(IUserManager $userManager, IManager $shareManager, IMountManager $mountManager, Manager $encryptionManager) {
 		$this->userManager = $userManager;
 		$this->shareManager = $shareManager;
 		$this->mountManager = $mountManager;
+		$this->encryptionManager = $encryptionManager;
 		parent::__construct();
 	}
 
@@ -249,7 +257,10 @@ class TransferOwnership extends Command {
 	 * @param OutputInterface $output
 	 */
 	protected function transfer(OutputInterface $output) {
-		$view = new View();
+		$customEncryptionWrapper = new CustomEncryptionWrapper(new ArrayCache(), \OC::$server->getEncryptionManager(), \OC::$server->getLogger());
+		Filesystem::addStorageWrapper('oc_customencryption', [$customEncryptionWrapper, 'wrapCustomStorage'], 2);
+		//A new wrapper for view.
+		$view = new CustomView();
 		$output->writeln("Transferring files to $this->finalTarget ...");
 		$sourcePath = (strlen($this->inputPath) > 0) ? $this->inputPath : "$this->sourceUser/files";
 		// This change will help user to transfer the folder specified using --path option.

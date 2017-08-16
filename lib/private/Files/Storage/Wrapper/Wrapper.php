@@ -569,6 +569,13 @@ class Wrapper implements \OC\Files\Storage\Storage, ILockingStorage {
 		return $this->getWrapperStorage()->moveFromStorage($sourceStorage, $sourceInternalPath, $targetInternalPath);
 	}
 
+	public function moveFromStorageCustom(\OCP\Files\Storage $sourceStorage, $sourceInternalPath, $targetInternalPath, $preserveTime, $isRename) {
+		if ($sourceStorage === $this) {
+			return $this->rename($sourceInternalPath, $targetInternalPath);
+		}
+
+	}
+
 	/**
 	 * @param string $path
 	 * @return array
